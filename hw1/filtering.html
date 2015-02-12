@@ -1,0 +1,58 @@
+   	One work around for this issue to not get caught up in data binding confusion is to do use the following work flow.
+ 
+- Enclose all of your code for creating the table (in its unfiltered form) in a function. Let's call this table_drawing for now.
+ 
+- Once you have finished filtering your data, pass the filtered data to an update function
+ 
+- This update function can first remove the original table by doing d3.select('table').remove()
+ 
+- Then this update function can call the table_drawing function with the filtered data like this: table_drawing(filtered_data)
+ 
+ 
+Note this will only work if your filtered data set matches the structure of the original unfiltered data set.
+ 
+Also this approach assumes you already successfully created the table with the unfiltered data set
+	
+	var hw1_data = {data: ""};
+
+    	// Load all data (no filtering)
+    	getRecords(hw1_data.data);
+
+		  // Get all rows
+		  function getRecords(data) {
+
+	      d3.json("data/countries_2012.json", function(error, data){
+
+	      hw1_data.data = data;
+
+	      // Get filter selection
+				d3.selectAll("input")
+					.on("change", function(d) {
+					  if(d3.select(this).attr("type") == "checkbox" && d3.select(this).node().checked) {
+					    currentSel.push( d3.select(this).attr("name") );
+					    var filted_data = filterContinent(data, currentSel);
+					    getRecords(filted_data);
+					  } else {
+					  	var index = currentSel.indexOf(d3.select(this).attr("name"));
+					  	if (index > -1) { currentSel.splice(index, 1); }
+					    var filted_data = filter(data, currentSel);
+					    getRecords(filted_data);
+					  }
+					 	console.log(currentSel);
+					});
+
+	      	// Filter data
+					function filterContinent(data, selection) {
+						var results = [];
+						console.log(data.length);
+						data.forEach(function(item) {
+							selection.forEach(function(sel) {
+								if (item.continent == selection.sel) {
+									results.push(item);
+								}
+							})
+
+						});
+						console.log(results.length);
+						return results;
+					}

@@ -97,22 +97,50 @@
 
     // UPDATE
     // old elements
-    rect
-      //...
+	rect.enter().append("rect")
+		  .attr("fill", "steelblue")
+		  .attr("width", function(d, i) {
+			  return scale(d["temperature"]);
+		  })
+		  .attr("height", bar_height)
+		  .attr("x", 0)
+		  .attr("y", function(d, i) {
+			  return (bar_height + 5) * i;
+		  });
 
     // ENTER
     // new elements
-    rect.enter().append("rect")
-      //...
+	rect.enter().append("rect")
+		  .attr("fill", "steelblue")
+		  .attr("width", function(d, i) {
+			  return scale(d["temperature"]);
+		  })
+		  .attr("height", bar_height)
+		  .attr("x", 0)
+		  .attr("y", function(d, i) {
+			  return (bar_height + 5) * i;
+		  });
 
     // ENTER + UPDATE
     // both old and new elements
+    rect.enter().append("rect")
+      .attr("fill", "steelblue")
+      .attr("height", bar_height)
+      .attr("x", 0);
+
     rect
+      .attr("width", function(d, i) {
+          return scale(d["temperature"]);
+      })
+      .attr("y", function(d, i) {
+          return (bar_height + 5) * i;
+      });
       //...
 
     // EXIT
     // elements that aren't associated with data
     rect.exit()
+		.remove();
       //...
 
   }
