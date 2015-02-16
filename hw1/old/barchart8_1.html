@@ -18,7 +18,7 @@
 <body>
   <script type="text/javascript">
  
-	var margin = {top: 20, bottom: 10, left:150, right: 40};
+	var margin = {top: 0, bottom: 10, left:150, right: 40};
     var width = 900 - margin.left - margin.right;
     var height = 900 - margin.top - margin.bottom;
 	
@@ -61,8 +61,7 @@
 			.attr("type", "radio")
 			.attr("value", function(d) {return d;})
 			.attr("name", "encoding")
-			.attr("title", function(d) {return d;})
-			.attr("checked", function(d) {if(d == showval) {return "checked";}});			
+			.attr("title", function(d) {return d;});			
 
 	 
     var labels = d3.select("body").append("div").text("Filter by: ").selectAll("input") 
@@ -86,8 +85,7 @@
             .attr("class", "aggregate")
             .attr("type", "radio")
             .attr("value", function(d) {return d;})
-            .attr("name", "def_agg")
-			.attr("checked", function(d) {if(d == "None") {return "checked";}});
+            .attr("name", "def_agg");
 
     var sortby = d3.select("body").append("div").text("Sort by: ").selectAll("input")    
         .data(sort_options)
@@ -98,8 +96,7 @@
             .attr("class", "sort")
             .attr("type", "radio")
             .attr("value", function(d) {return d;})
-            .attr("name", "sort_by")
-			.attr("checked", function(d) {if(d == sortval) {return "checked";}});
+            .attr("name", "def_agg");
  
     var svg = d3.select("body").append("svg")
         .attr("width", width+margin.left+margin.right)
@@ -130,6 +127,7 @@
 					}
 				});
 			}); 
+			console.log(data[0]);
 			data = [].concat.apply([], data);
 			if (agg_state == 0) {
 				data.forEach(function(d) {                       
@@ -202,6 +200,8 @@
         xScale.domain([min, max]);
         yScale.domain(data.map(function(d) { return d.name; }));
 		
+		
+
         var groups = g.append("g")
             .selectAll("text")
 			.data(data)

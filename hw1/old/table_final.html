@@ -1,0 +1,261 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<meta charset="utf-8"> 
+    <head> 
+        <style> 
+            body { 
+                font: 15px sans-serif; 
+            } 
+            label { 
+                font: 15px sans-serif; 
+            } 
+            table { 
+                border-collapse: collapse; 
+            } 
+            th { 
+                  border: solid 1px black; 
+                font: 15px sans-serif; 
+                font-weight: bold; 
+            } 
+            caption { 
+                  border: solid 1px black; 
+                font: 18px sans-serif; 
+                background-color: yellow; 
+            } 
+            td { 
+                  border: solid 1px black; 
+                  text-align: center; 
+                font: 13px sans-serif;
+                width: 100px; 
+            }
+            tbody tr:nth-child(odd) {
+                   background-color: #ccc;
+            }
+             
+        </style> 
+    </head> 
+    <body> 
+        <script src="http://d3js.org/d3.v3.min.js"></script> 
+        <script>
+ 
+            var sortOrder = [true, false, false, false, false, false];
+            var sortToken = 0; 
+            var ftype = ["string", "string", "number", "number", "number", "number"]; 
+            var columns = ["name", "continent", "gdp", "life_expectancy", "population", "year"]; 
+            var continents = ["Americas", "Africa", "Asia", "Europe", "Oceania"]; 
+            var sortasc = false;
+            var checkSelected = {Americas:"", Africa:"", Asia:"", Europe:"", Oceania:""};
+            var checkSelectedDefault = {Americas:"", Africa:"", Asia:"", Europe:"", Oceania:""};
+            var agg_levels = ["None", "by Continent"];
+            var agg_state = 0;
+            var yearslide = 2012;
+            var timeslider = d3.select("body").append("div").text("Year: ").selectAll("input")
+                .data([2012])
+                .enter()
+                .append("label")
+                    .attr("class", "datemin") 
+				.append("text").text("min").attr("class", "mindate");					
+				d3.select("label.datemin").append("input")
+					.attr("class", "timeslider")
+					.attr("type", "range")
+					.attr("name", "tslider")
+					.attr("min", "1995")
+					.attr("max", "2013")
+					.attr("step", "1")
+					.attr("value", "2012")
+					.attr("oninput", ";");				
+	 
+            var labels = d3.select("body").append("div").text("Filter by: ").selectAll("input") 
+                .data(continents) 
+                .enter() 
+                .append("label") 
+                .text(function(d) { return d;})         
+                .append("input")
+                    .attr("class", "filter") 
+                    .attr("type", "checkbox") 
+                    .attr("value", function(d) {return d;}) 
+                    .attr("name", function(d) {return d;}) 
+                    .attr("title", function(d) {return d;}); 
+
+            var agg = d3.select("body").append("div").text("Aggregation: ").selectAll("input")    
+                .data(agg_levels)
+                .enter()
+                .append("label")
+                .text(function(d) {return d;})
+                .append("input")
+                    .attr("class", "aggregate")
+                    .attr("type", "radio")
+                    .attr("value", function(d) {return d;})
+                    .attr("name", "def_agg");
+
+            get_data(); 
+                     
+            function get_data() { 
+                d3.json("data/countries_1995_2012.json", function(error, data){ 
+					data = data.map(function(d) {
+						var name = d.name;
+						var continent = d.continent;
+						return d.years.map(function(e) {
+							var gdp = e.gdp;
+							var life_expectancy = e.life_expectancy;
+							var population = e.population;
+							var year = e.year;
+							return {
+								"name": name,
+								"continent": continent,
+								"gdp": gdp,
+								"life_expectancy": life_expectancy,
+								"population": population,
+								"year": year
+							}
+						});
+					}); 
+					data = [].concat.apply([], data);
+					if (agg_state == 0) {
+						data.forEach(function(d) {                       
+							d.name = d.name;
+							d.continent = d.continent;
+							d.gdp = d3.round(d.gdp/1000000000, 1) + "B";
+							d.life_expectancy = d3.format(",")(d3.round(d.life_expectancy, 1));
+							d.population = d3.format(",")(d.population);
+							d.year = +d.year;    
+						});
+					}
+					d3.select("text.maxdate").remove();
+					draw_timeslider(data);
+					if (agg_state == 1) {
+						var data_year = data.filter(function(d) { return d['year'] == yearslide });
+						data = d3.nest()
+								.key(function(d) {return d.continent;})
+								.rollup(function(leaves) {return [
+									d3.sum(leaves, function(d) {return parseInt(d.gdp);}), 
+									d3.mean(leaves, function(d) {return parseFloat(d.life_expectancy);}), 
+									d3.sum(leaves, function(d) {return parseInt(d.population);}),
+									d3.mean(leaves, function(d) {return parseInt(d.year);})
+								]})
+								.entries(data_year);
+
+							data.forEach(function(d) {                       
+								d.continent = d.key;
+								d.name = d.key;
+								d.gdp = d3.round(d.values[0]/1000000000, 1) + "B";
+								d.life_expectancy = d3.format(",")(d3.round(d.values[1], 1));
+								d.population = d3.format(",")(d.values[2]);
+								d.year = +d.values[3];    
+							});			
+console.log(data);							
+					}
+					draw_table(data); 
+				});
+            }
+
+            function draw_timeslider(data) {
+				d3.select("text.mindate")
+					.text(function(d) {return d3.min(data, function(e) {return e.year;})});
+				d3.select("input.timeslider")
+                    .attr("min", function(d) {return d3.min(data, function(e) {return e.year;})})
+                    .attr("max", function(d) {return d3.max(data, function(e) {return e.year;})})
+                    .attr("value", function(d) {return d3.max(data, function(e) {return e.year;})});
+                    d3.select("label").append("text").text(function(d) {return d3.max(data, function(e) {return e.year;})}).attr("class", "maxdate");    
+            } 
+
+            function draw_table(data) {
+                var table = d3.select("body").append("table"), 
+                thead = table.append("thead") 
+                    .attr("class", "thead"); 
+                tbody = table.append("tbody"); 
+ 
+                table.append("caption") 
+                    .html("World Countries Ranking");
+ 
+                thead.append("tr").selectAll("th") 
+                    .data(columns) 
+                    .enter() 
+                    .append("th") 
+                    .text(function(d) { return d; })
+                    .on("click", function(header, i) {return sort_table(i);});
+
+                var rows = tbody.selectAll("tr.row")
+                    .remove() 
+                    .data(data.filter(function(d){ return (d['continent'] in checkSelected && d['year'] == yearslide); })) 
+                    .enter() 
+                    .append("tr").attr("class", "row"); 
+ 
+                var cells = rows.selectAll("td") 
+                    .data(function(row) { 
+                        return columns.map(function(column) { 
+                            return {column: column, value: row[column]}; 
+                        }); 
+                    }) 
+                    .enter() 
+                    .append("td") 
+                    .text(function(d) { return d.value; })
+                sort_table(-1);
+            }
+
+            function sort_table(i) {
+                if (i < 0) {
+                    i = sortToken;
+                } else {
+                    sortToken = i;
+                    sortOrder[i] = !(sortOrder[i]);
+                }
+                var header = columns[i];
+                if (sortOrder[i]) { 
+                    tbody.selectAll("tr").sort(function(a, b) {
+                        if (ftype[i] == "string") { 
+                            return d3.ascending(a[header], b[header]) || d3.ascending(a["name"], b["name"]); 
+                        } else { 
+                            a = parseInt((a[header]).replace(/,/g, '')); 
+                            b = parseInt((b[header]).replace(/,/g, '')); 
+                            return (a - b); 
+                        } 
+                    }); 
+                } else { 
+                    tbody.selectAll("tr").sort(function(a, b) { 
+                        if (ftype[i] == "string") { 
+                            return d3.descending(a[header], b[header]) || d3.descending(a["name"], b["name"]); 
+                        } else { 
+                            a = parseInt((a[header]).replace(/,/g, '')); 
+                            b = parseInt((b[header]).replace(/,/g, '')); 
+                            return (b - a); 
+                        } 
+                    }); 
+                }
+            }
+
+            d3.selectAll("input.filter").on("change", function() {
+                checkSelected = {};
+                d3.selectAll("input").each(function(d) {  
+                    if(d3.select(this).attr("type") == "checkbox" && d3.select(this).node().checked) { 
+                        var checkName = d3.select(this).attr("name");
+                        checkSelected[checkName] = ''; 
+                    } 
+                }); 
+                if(Object.getOwnPropertyNames(checkSelected).length === 0){
+                      checkSelected = checkSelectedDefault;
+                }
+                d3.select('table').remove();
+                get_data();
+            });  
+
+            d3.selectAll("input.aggregate").on("change", function() {
+                d3.select('table').remove();
+                if(d3.select(this).attr("value") == "None"){
+                    agg_state = 0;
+                } else {
+                    agg_state = 1;
+                }
+				get_data();
+            });
+
+            d3.selectAll("input.timeslider").on("change", function() {
+                yearslide = this.value;
+                d3.select('table').remove();
+                get_data();
+            });
+
+ 
+    </script>  
+  </body> 
+</html>

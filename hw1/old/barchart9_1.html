@@ -63,7 +63,6 @@
 			.attr("name", "encoding")
 			.attr("title", function(d) {return d;})
 			.attr("checked", function(d) {if(d == showval) {return "checked";}});			
-
 	 
     var labels = d3.select("body").append("div").text("Filter by: ").selectAll("input") 
         .data(continents) 
@@ -210,11 +209,19 @@
  
         var bars = groups
             .append("rect")
+			  .transition()
+  .duration(3000)
             .attr("width", function(d) { return xScale(d.disp_val); })
             .attr("height", yScale.rangeBand())
             .attr("x", xScale(min))
             .attr("y", function(d) { return yScale(d.name); })
-			.style("fill", function(d) {return cont_color[continents.indexOf(d.continent)];});					
+			.style("fill", function(d) {return cont_color[continents.indexOf(d.continent)];});		
+	bars.exit()
+  .attr("opacity", 1)
+  .transition()
+  .duration(3000)
+    .attr("opacity", 0)
+    .remove();
 	
 		g.append("g")
 		  .attr("class", "x axis")
@@ -255,20 +262,17 @@
     });
 			
 	d3.selectAll("input.sort").on("change", function() {
-        d3.selectAll('g').remove();
         sortval = d3.select(this).attr("value");
 		get_data();
     });
 
     d3.selectAll("input.timeslider").on("change", function() {
         yearslide = this.value;
-        d3.selectAll('g').remove();
         get_data();
     });
 			
 	d3.selectAll("input.encode").on("change", function() {
         showval = this.value;
-        d3.selectAll('g').remove();
         get_data();
     });
   </script>

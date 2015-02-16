@@ -4,23 +4,18 @@
 <head>
 <script src="http://d3js.org/d3.v3.min.js"></script>
   <style type="text/css">
-
-	svg {
-		font: 10px sans-serif;
-	}
-	
-	.axis path {
-	  fill: none;
-	}
-
+    rect {
+        fill:teal;
+        fill-opacity:.8;
+    }
   </style>
 </head>
 <body>
   <script type="text/javascript">
  
-	var margin = {top: 20, bottom: 10, left:150, right: 40};
+	var margin = {top: 0, bottom: 10, left:300, right: 40};
     var width = 900 - margin.left - margin.right;
-    var height = 900 - margin.top - margin.bottom;
+    var height = 600 - margin.top - margin.bottom;
 	
 	var encoding  = ["population", "gdp"];
     var columns = ["name", "continent", "gdp", "life_expectancy", "population", "year"]; 
@@ -61,8 +56,7 @@
 			.attr("type", "radio")
 			.attr("value", function(d) {return d;})
 			.attr("name", "encoding")
-			.attr("title", function(d) {return d;})
-			.attr("checked", function(d) {if(d == showval) {return "checked";}});			
+			.attr("title", function(d) {return d;});			
 
 	 
     var labels = d3.select("body").append("div").text("Filter by: ").selectAll("input") 
@@ -86,8 +80,7 @@
             .attr("class", "aggregate")
             .attr("type", "radio")
             .attr("value", function(d) {return d;})
-            .attr("name", "def_agg")
-			.attr("checked", function(d) {if(d == "None") {return "checked";}});
+            .attr("name", "def_agg");
 
     var sortby = d3.select("body").append("div").text("Sort by: ").selectAll("input")    
         .data(sort_options)
@@ -98,8 +91,7 @@
             .attr("class", "sort")
             .attr("type", "radio")
             .attr("value", function(d) {return d;})
-            .attr("name", "sort_by")
-			.attr("checked", function(d) {if(d == sortval) {return "checked";}});
+            .attr("name", "def_agg");
  
     var svg = d3.select("body").append("svg")
         .attr("width", width+margin.left+margin.right)
@@ -130,6 +122,7 @@
 					}
 				});
 			}); 
+			console.log(data[0]);
 			data = [].concat.apply([], data);
 			if (agg_state == 0) {
 				data.forEach(function(d) {                       
@@ -164,8 +157,10 @@
 						d.population = +d.values[2];
 						d.year = +d.values[3];    
 						if (showval == "population") {d.disp_val = d.population;} else {d.disp_val = d.gdp;}
-					});						
+					});	
+console.log(data[0]);					
 			}
+//			draw_table(data); 
 			draw_table(data.filter(function(d){ return (d['continent'] in checkSelected && d['year'] == yearslide); }));
 		});
     }
@@ -190,19 +185,32 @@
 		}
 
 		var xScale = d3.scale.linear().range([0, width]);
-		var yScale = d3.scale.ordinal().rangeRoundBands([0, height], .2, 0); 
+	//	var yScale = d3.scale.ordinal().rangeRoundBands([0, height], .2, 0); 
+		var yScale = d3.scale.ordinal().rangeRoundBands([0, height], .2); 
 		
-		var xAxis = d3.svg.axis().scale(xScale).orient("top").tickSize(-height);
-		var yAxis = d3.svg.axis().scale(yScale).orient("left").tickSize(0);
+		var xAxis = d3.svg.axis().scale(xScale).orient("top").tickSize(1);
+		var yAxis = d3.svg.axis().scale(yScale).orient("left").tickSize(1);
 
 		var g = svg.append("g")
                 .attr("transform", "translate("+margin.left+","+margin.top+")");
         var max = d3.max(data, function(d) { return d.disp_val; } );
         var min = 0;
-        xScale.domain([min, max]);
+    //    xScale.domain([min, max]);
+		xScale.domain([min, max]);
         yScale.domain(data.map(function(d) { return d.name; }));
+
+		var bar = svg.selectAll("g.bar")
+			.data(data)
+			.enter()
+			.append("g")
+				.attr("class", "bar")
+				.attr("transform", function(d) { return "translate(0," + yScale(d.name) + ")"; });
+
+		bar.append("rect")
+			.attr("width", function(d) { return xScale(d.disp_val); })
+			.attr("height", yScale.rangeBand());
 		
-        var groups = g.append("g")
+ /*       var groups = g.append("g")
             .selectAll("text")
 			.data(data)
             .enter()
@@ -214,7 +222,9 @@
             .attr("height", yScale.rangeBand())
             .attr("x", xScale(min))
             .attr("y", function(d) { return yScale(d.name); })
-			.style("fill", function(d) {return cont_color[continents.indexOf(d.continent)];});					
+			.style("fill", function(d) {return cont_color[continents.indexOf(d.continent)];});
+	    //var format = d3.format(",.0f");	
+*/		
 	
 		g.append("g")
 		  .attr("class", "x axis")
@@ -223,6 +233,7 @@
 		g.append("g")
 			.attr("class", "y axis")
 			.call(yAxis);
+		//	bars.exit().remove();
     }
 
     d3.selectAll("input.filter").on("change", function() {
@@ -246,10 +257,8 @@
         d3.selectAll('g').remove();
         if(d3.select(this).attr("value") == "None"){
             agg_state = 0;
-			height = 900 - margin.top - margin.bottom;
         } else {
             agg_state = 1;
-			height = 300 - margin.top - margin.bottom;
         }
 		get_data();
     });
