@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Homework 2 Graph</title>
+<style>
+  .link {
+    stroke: gray;
+    stroke-width: .8px;
+  }
+
+  .node {
+    fill: white;
+    stroke: #000;
+    stroke-width: .9px;
+  }
+
+  .node:hover {
+    fill: black;
+  }
+  svg {
+		font: 10px sans-serif;
+	}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+  <form>
+  <label><input class="views" type="radio" name="views" value="rankings" checked>View Rankings</label>
+  &nbsp;
+  Rank by:
+  <select id="rankby">
+  <option value="population" selected>Population</option>
+  <option value="gdp">GDP</option>
+  <option value="life">Life Expectancy</option> 
+  </select>
+  &nbsp;
+  Rank Positioning:
+  <label><input class="position" type="radio" name="position" value="relative" checked>Relative</label>
+  <label><input class="position" type="radio" name="position" value="absolute" >Absolute</label>
+  <p />
+  <label><input class="views" type="radio" name="views" value="scatter">View Scatter Plot</label>
+  &nbsp;
+  <select id="plotby">
+  <option value="gdppop" selected>Population/GDP</option>
+  <option value="latlon">Longitude/Latitude</option>
+  </select> 
+  </form>
+<script>
+
+var margin = {top: 50, bottom: 10, left: 300, right: 40};
+var width = 1200 - margin.left - margin.right;
+var height = 1200 - margin.top - margin.bottom;
+var padding = 10;
+var selection = "population";
+var position = "relative";
+var plot_by = "gdppop";
+var view_by = "rankings";
+
+var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+var fill = d3.scale.category10();
+
+var graph = {nodes: [], links: []};
+
+//var nb_nodes = 120, nb_cat = 10;
+
+//var node_scale = d3.scale.linear().domain([0, nb_cat]).range([5, 50])
+
+d3.json("data/countries_2012.json", function(error, data){ 
+    data.forEach(function(d) { 
+        d.gdp = +d.gdp;
+        d.life_expectancy = d3.round(d.life_expectancy, 1); 
+        d.population = +d.population; 
+        d.year = +d.year; 
+    }); 
+	data.sort(function(a, b) { return d3.ascending(a["name"], b["name"]);});
+
+	graph.nodes = data;
+
+	var node = svg.selectAll(".node")
+        .data(graph.nodes)
+        .enter()
+        .append("g").attr("class", "node");
+	
+	node.append("circle")
+		.attr("r", 5);
+		
+	node.append("text")
+		.text(function(d) {return d.name;})
+		.attr("x", function() {return 8;})
+		.attr("y", function() {return 3;});
+		
+	rank_value();
+
+	function rank_value() {
+	
+		height = 700 - margin.top - margin.bottom;
+		width = 900 - margin.left - margin.right;
+
+		if (selection == "population") {
+			data.forEach(function(d) {                       
+				d.rank_val = d.population;
+			});				
+		} else if (selection == "gdp") {
+			data.forEach(function(d) {                       
+				d.rank_val = d.gdp;	
+			});
+		} else {
+			data.forEach(function(d) {                       
+				d.rank_val = d.life_expectancy;				
+			});
+		} 
+	
+		if (position == "relative") {
+			data.sort(function(a, b) { return a.rank_val - b.rank_val;});
+			data.forEach(function(d, i) {                       
+				d.rank_val = i;				
+			});
+			height = 1200 - margin.top - margin.bottom;
+		}
+
+		var yScale = d3.scale.linear()
+			.domain([d3.min(data, function(d) { return d.rank_val; }), d3.max(data, function(d) { return d.rank_val; })])
+			.range([height - padding, padding]);
+		
+		graph.nodes.forEach(function(d, i) {
+			d.x = width/2;
+			d.y = yScale(d.rank_val);
+		});
+		
+		graph_update(500);	
+	}
+	
+	function scatter_value() {
+		height = 700 - margin.top - margin.bottom;
+		width = 1200 - margin.left - margin.right;
+		if (plot_by == "gdppop") {
+			data.forEach(function(d) {                       
+				d.xval = d.gdp;
+				d.yval = d.population;
+			});				
+		} else {
+			data.forEach(function(d) {                       
+				d.xval = d.longitude;
+				d.yval = d.latitude;
+			});
+		}
+		var yScale = d3.scale.linear()
+			.domain([d3.min(data, function(d) { return d.yval; }), d3.max(data, function(d) { return d.yval; })])
+			.range([height - padding, padding]);
+		var xScale = d3.scale.linear()
+			.domain([d3.min(data, function(d) { return d.xval; }), d3.max(data, function(d) { return d.xval; })])
+			.range([padding, width - 7*padding]);
+
+		graph.nodes.forEach(function(d, i) {
+			d.x = xScale(d.xval);
+			d.y = yScale(d.yval);
+		});
+		
+		graph_update(500);	
+	} 
+	
+	function graph_update(duration) {
+
+		node.transition().duration(duration)
+			.attr("transform", function(d) { 
+				return "translate("+d.x+","+d.y+")"; 
+			});
+	} 
+	
+	d3.select("#rankby")
+		.on("change", function() {
+		    selection = d3.select(this).property("value");
+			if (view_by == "rankings") {
+				rank_value();
+			}
+		});
+		
+	d3.selectAll("input.position")
+		.on("change", function() {
+		    position = d3.select(this).property("value");
+			if (view_by == "rankings") {
+				rank_value();	
+			}
+		});
+		
+	d3.selectAll("input.views")
+		.on("change", function() {
+		    view_by = d3.select(this).property("value");
+			if (view_by == "rankings") {
+				rank_value();	
+			} else {
+				scatter_value();
+			}
+		});
+	d3.select("#plotby")
+		.on("change", function() {
+		    plot_by = d3.select(this).property("value");
+			if (view_by == "scatter") {
+				scatter_value();
+			}
+		});	
+/*	d3.select("select[value=\"name\"]").on("click", rank_name);
+	d3.select("select[value=\"popoulation\"]").on("click", rank_population);
+	d3.select("select[value=\"gdp\"]").on("click", rank_gdp);
+	d3.select("select[value=\"life\"]").on("click", rank_life); */
+});
+
+/*
+
+d3.select("input[value=\"nocolor\"]").on("click", function() {
+  d3.selectAll("circle").transition().duration(500).style("fill", "#66CC66");
+})
+
+d3.select("input[value=\"color_cat\"]").on("click", category_color);
+
+d3.select("input[value=\"nosize\"]").on("click", function() {
+  d3.selectAll("circle").transition().duration(500).attr("r", 5);
+})
+*/
+</script>
+</body>
+</html>

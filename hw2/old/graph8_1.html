@@ -73,14 +73,12 @@ font: 10px sans-serif;
     var padding = 10;
     var continents = ["Americas", "Africa", "Asia", "Europe", "Oceania"]; 
     var selection = "population";
-	var cirselection = "population";
     var position = "relative";
     var plot_by = "gdppop";
     var view_by = "rankings";
     var sort_by = "population";
     var group_by = "grouped";
     var fgrouped = false;
-	var cgrouped = false;
     var force_group = "cont_xscale";
 	var cont = [{continent: "Americas"}, {continent: "Africa"}, {continent: "Asia"}, {continent: "Europe"}, {continent: "Oceania"}]
 
@@ -92,6 +90,10 @@ font: 10px sans-serif;
     var fill = d3.scale.category10();
 
     var graph = {nodes: [], links: []};
+
+    //var nb_nodes = 120, nb_cat = 10;
+
+    //var node_scale = d3.scale.linear().domain([0, nb_cat]).range([5, 50])
 
     d3.json("data/countries_2012.json", function(error, data){ 
             data.forEach(function(d) { 
@@ -124,30 +126,24 @@ font: 10px sans-serif;
             .on("end", function(d) {});
 
         function tick(d) {
-            var width = 1400 - margin.left - margin.right;
+            var width = 1600 - margin.left - margin.right;
             var xScale = d3.scale.ordinal()
                 .domain(continents)
                 .rangeBands([0, width]);
-			var k = d.alpha * .1;
             if (fgrouped && force_group == "cont_xscale") {
+                var k = d.alpha * .1;
                 graph.nodes.forEach(function(o) {
                     o.x += (xScale(o.continent) - o.x)*k;
                 });
             } else if (fgrouped && force_group == "cont_circle") {
-				pieScale();
-				graph.nodes.forEach(function(o) { 
-					cont_pie.map(function(n) { 
-						if (o.continent == n.continent) {
-							o.x += (n.x - o.x)*k;
-							o.y += (n.y - o.y)*k;
-						}
-					}); 
-				}); 
+               pieScale();
             }
             graph_update(0);
+
         }
 
-		rank_value();
+        rank_value();
+
 
         function rank_value() {
             force.stop();
@@ -219,7 +215,7 @@ font: 10px sans-serif;
             height = 700 - margin.top - margin.bottom;
             width = 900 - margin.left - margin.right;
             var r = Math.min(height, width)/1.2;
-            if (cirselection == "population") {
+            if (selection == "population") {
                 data.forEach(function(d) {                       
                     d.sort_val = d.population;
                 });    
@@ -227,7 +223,7 @@ font: 10px sans-serif;
                 data.forEach(function(d) {                       
                     d.sort_val = d.gdp;    
                 });
-            } 
+            }
             var arc = d3.svg.arc()
                 .outerRadius(r);
 
@@ -236,65 +232,61 @@ font: 10px sans-serif;
                 .value(function(d, i) { 
                     return 1;  // We want an equal pie share/slice for each point
                 });
-				
+
             graph.nodes = pie(graph.nodes).map(function(d, i) {
             // Needed to caclulate the centroid
                 d.innerRadius = 0;
                 d.outerRadius = r;
             // Building the data object we are going to return
-                d.data.x = arc.centroid(d)[0]+ width/2;
-                d.data.y = arc.centroid(d)[1]+ height/2;
+                d.data.x = arc.centroid(d)[0]+width/2;
+                d.data.y = arc.centroid(d)[1]+height/2;
                 return d.data;
             })
              graph_update(500);
         }
 
         function force_layout() {
+			graph.nodes = data;
             force.nodes(graph.nodes)
                 .links(graph.links)
                 .start();
         }
-		
-		function pieScale() {
-				var r = Math.min(height, width)/1.2;
- 				var arc = d3.svg.arc()
-					.outerRadius(r);
-				var pie = d3.layout.pie()
-					.value(function(d, i) { 
-						return 1;  // We want an equal pie share/slice for each point
-					});
-				cont_pie = pie(cont).map(function(d, i) {
-					d.innerRadius = 0;
-					d.outerRadius = r;
-					d.data.x = arc.centroid(d)[0]+width/2;
-					d.data.y = arc.centroid(d)[1]+height/2;
-					return d.data;
-				})
-		}
-		
-		function group_circles() {
-			pieScale();
-			var r = Math.min(height, width)/5;
-			var arc = d3.svg.arc()
-				.outerRadius(r);
-			var pie = d3.layout.pie()
-				.value(function(d, i) { 
-					return 1;  // We want an equal pie share/slice for each point
-				});
-			var cgroups = [];	
-			cont_pie.forEach(function(d) {
-				cgroup = graph.nodes.filter(function(e) { return (e.continent == d.continent);});
-				cgroup = pie(cgroup).map(function(f, i) {
-					f.innerRadius = 0;
-					f.outerRadius = r;
-					f.data.x = arc.centroid(f)[0]+d.x;
-					f.data.y = arc.centroid(f)[1]+d.y;
-					cgroups.push(f.data);
-				});						
-			}); 
-			graph.nodes = cgroups;
-			graph_update(500);
-		}
+
+        function pieScale() {
+            var r = Math.min(height, width)/1.2;
+ 
+            var arc = d3.svg.arc()
+                .outerRadius(r);
+
+            var pie = d3.layout.pie()
+                .value(function(d, i) { 
+                    return 1;  // We want an equal pie share/slice for each point
+                });
+
+            cont_pie = pie(cont).map(function(d, i) {
+            // Needed to caclulate the centroid
+                d.innerRadius = 0;
+                d.outerRadius = r;
+            // Building the data object we are going to return
+                d.data.x = arc.centroid(d)[0]+width/2;
+                d.data.y = arc.centroid(d)[1]+height/2;
+                return d.data;
+            })
+			console.log(graph.nodes[0]);
+			graph.nodes.forEach(function(e) { 
+                cont_pie.map(function(n) { 
+					if (e.continent == n.continent) {
+						e.x = n.x;
+						e.y = n.y;
+					}
+				}); 
+			});          
+ 
+			console.log(graph.nodes[1]);
+
+ //            graph_update(500);            
+        }
+
 
         function graph_update(duration) {
             node.transition().duration(duration)
@@ -313,14 +305,9 @@ font: 10px sans-serif;
 
         d3.select("#sortby")
             .on("change", function() {
-                cirselection = d3.select(this).property("value");
-
+                   selection = d3.select(this).property("value");
                 if (view_by == "circular") {
-					if (cgrouped) {
-						group_circles();
-					} else {
-						circular_layout();
-					}					
+                    circular_layout();
                 }
             });
 
@@ -359,18 +346,6 @@ font: 10px sans-serif;
                 fgrouped = !fgrouped;
                 if (view_by == "force") {
                     force_layout();
-                }
-            });
-
-		d3.selectAll("input.cirgroup")
-            .on("change", function() {
-                cgrouped = !cgrouped;
-                if (view_by == "circular") {
-					if (cgrouped) {
-						group_circles();
-					} else {
-						circular_layout();
-					}					
                 }
             });
 

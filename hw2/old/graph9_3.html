@@ -227,7 +227,7 @@ font: 10px sans-serif;
                 data.forEach(function(d) {                       
                     d.sort_val = d.gdp;    
                 });
-            } 
+            }
             var arc = d3.svg.arc()
                 .outerRadius(r);
 
@@ -313,14 +313,9 @@ font: 10px sans-serif;
 
         d3.select("#sortby")
             .on("change", function() {
-                cirselection = d3.select(this).property("value");
-
+                   cirselection = d3.select(this).property("value");
                 if (view_by == "circular") {
-					if (cgrouped) {
-						group_circles();
-					} else {
-						circular_layout();
-					}					
+                    circular_layout();
                 }
             });
 

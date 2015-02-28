@@ -93,6 +93,10 @@ font: 10px sans-serif;
 
     var graph = {nodes: [], links: []};
 
+    //var nb_nodes = 120, nb_cat = 10;
+
+    //var node_scale = d3.scale.linear().domain([0, nb_cat]).range([5, 50])
+
     d3.json("data/countries_2012.json", function(error, data){ 
             data.forEach(function(d) { 
             d.gdp = +d.gdp;
@@ -227,7 +231,7 @@ font: 10px sans-serif;
                 data.forEach(function(d) {                       
                     d.sort_val = d.gdp;    
                 });
-            } 
+            }
             var arc = d3.svg.arc()
                 .outerRadius(r);
 
@@ -256,7 +260,7 @@ font: 10px sans-serif;
         }
 		
 		function pieScale() {
-				var r = Math.min(height, width)/1.2;
+					    var r = Math.min(height, width)/1.2;
  				var arc = d3.svg.arc()
 					.outerRadius(r);
 				var pie = d3.layout.pie()
@@ -270,30 +274,6 @@ font: 10px sans-serif;
 					d.data.y = arc.centroid(d)[1]+height/2;
 					return d.data;
 				})
-		}
-		
-		function group_circles() {
-			pieScale();
-			var r = Math.min(height, width)/5;
-			var arc = d3.svg.arc()
-				.outerRadius(r);
-			var pie = d3.layout.pie()
-				.value(function(d, i) { 
-					return 1;  // We want an equal pie share/slice for each point
-				});
-			var cgroups = [];	
-			cont_pie.forEach(function(d) {
-				cgroup = graph.nodes.filter(function(e) { return (e.continent == d.continent);});
-				cgroup = pie(cgroup).map(function(f, i) {
-					f.innerRadius = 0;
-					f.outerRadius = r;
-					f.data.x = arc.centroid(f)[0]+d.x;
-					f.data.y = arc.centroid(f)[1]+d.y;
-					cgroups.push(f.data);
-				});						
-			}); 
-			graph.nodes = cgroups;
-			graph_update(500);
 		}
 
         function graph_update(duration) {
@@ -313,14 +293,9 @@ font: 10px sans-serif;
 
         d3.select("#sortby")
             .on("change", function() {
-                cirselection = d3.select(this).property("value");
-
+                   cirselection = d3.select(this).property("value");
                 if (view_by == "circular") {
-					if (cgrouped) {
-						group_circles();
-					} else {
-						circular_layout();
-					}					
+                    circular_layout();
                 }
             });
 
@@ -366,11 +341,7 @@ font: 10px sans-serif;
             .on("change", function() {
                 cgrouped = !cgrouped;
                 if (view_by == "circular") {
-					if (cgrouped) {
-						group_circles();
-					} else {
-						circular_layout();
-					}					
+                    circular_layout();
                 }
             });
 
