@@ -43,6 +43,7 @@ body {
                 var gdp = e.gdp;
                 var population = e.population;
                 var year = e.year;
+				var life_expectancy = e.life_expectancy;
                 var top_partners = e.top_partners;
                 return {
                     "name": name,
@@ -53,9 +54,10 @@ body {
                     "year": year,
                     "population": population,
                     "gdp": gdp,
+					"life_expectancy": life_expectancy,
                     "top_partners": top_partners
                 }
-            });
+			});
         });
         data = [].concat.apply([], data);
         graph.nodes = data;

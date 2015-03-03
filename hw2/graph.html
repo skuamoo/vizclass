@@ -12,13 +12,28 @@
     stroke: #000;
     stroke-width: .9px;
   }
-
+  
   .node:hover {
     fill: black;
+    stroke-opacity: 1;
   }
+
+  .linkshow {
+    stroke-opacity: 1;
+    stroke-width: 2px;
+  }
+
+  .linkdim {
+    stroke-opacity: 0.1;
+  }
+
+  .nodedim {
+    stroke-opacity: 0.1;
+  }
+
   svg {
-font: 10px sans-serif;
-}
+    font: 10px sans-serif;
+  }
 
 </style>
 <body>
@@ -64,6 +79,8 @@ font: 10px sans-serif;
   <option value="cont_xscale" selected>Continent (X Scale)</option>
   <option value="cont_circle">Continent (Circular)</option>
   </select>
+  <br />
+  <label><input class="views" type="radio" name="views" value="trade">Trade Partners (Circular Layout)</label>  
   </form>
 <script>
 
@@ -82,7 +99,7 @@ font: 10px sans-serif;
     var fgrouped = false;
 	var cgrouped = false;
     var force_group = "cont_xscale";
-	var cont = [{continent: "Americas"}, {continent: "Africa"}, {continent: "Asia"}, {continent: "Europe"}, {continent: "Oceania"}]
+	var cont = [{continent: "Americas"}, {continent: "Africa"}, {continent: "Asia"}, {continent: "Europe"}, {continent: "Oceania"}];
 
 
     var svg = d3.select("body").append("svg")
@@ -93,17 +110,80 @@ font: 10px sans-serif;
 
     var graph = {nodes: [], links: []};
 
-    d3.json("data/countries_2012.json", function(error, data){ 
-            data.forEach(function(d) { 
+
+    d3.json("data/countries_1995_2012.json", function(error, data){
+
+        data = data.map(function(d) {
+            var name = d.name;
+            var continent = d.continent;
+            var country_id = d.country_id;
+            var latitude = d.latitude;
+            var longitude = d.longitude;
+            return d.years.map(function(e) {
+                var gdp = e.gdp;
+                var population = e.population;
+                var year = e.year;
+				var life_expectancy = e.life_expectancy;
+                var top_partners = e.top_partners;
+                return {
+                    "name": name,
+                    "continent": continent,
+                    "country_id": country_id,
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "year": year,
+                    "population": population,
+                    "gdp": gdp,
+					"life_expectancy": life_expectancy,
+                    "top_partners": top_partners
+                }
+            });
+        });
+        data = [].concat.apply([], data);
+		var data_year = data.filter(function(d) {return d.year == 2012;});
+        graph.nodes = data_year;
+        graph.nodes.forEach(function(d) { 
             d.gdp = +d.gdp;
             d.life_expectancy = d3.round(d.life_expectancy, 1); 
             d.population = +d.population; 
             d.year = +d.year; 
            }); 
-        data.sort(function(a, b) { return d3.ascending(a["name"], b["name"]);});
+        graph.links = data_year.map(function(d) {
+            var country_id = d.country_id;
+            var year = d.year;
+            return d.top_partners.map(function(e) {
+                var country_id2 = e.country_id;
+                var total_export = e.total_export;
+                return {
+                    "source": country_id,
+                    "target": country_id2,
+                    "total_export": total_export,
+                    "year": year
+                }
+            });
+        }); 
 
-        graph.nodes = data;
+        graph.links = [].concat.apply([], graph.links);
+        graph.links.forEach(function(e) { 
+                var sourceNode = graph.nodes.filter(function(n) { return n.country_id === e.source; })[0],
+                targetNode = graph.nodes.filter(function(n) { return n.country_id === e.target; })[0];
+			if (!targetNode) {
+			} else {
+            e.source = sourceNode;
+            e.target = targetNode;    }                
+        });  
 
+//        graph.links = graph.links.filter(function(d) {return d.year == 2012;});
+//        graph.nodes = graph.nodes.filter(function(d) {return d.year == 2012;});	
+	
+        graph.nodes.sort(function(a, b) { return d3.ascending(a["name"], b["name"]);});
+
+        var link = svg.selectAll(".link")
+            .data(graph.links);
+        link.enter().append("line")
+            .attr("class", "link");		
+		link.attr("opacity", 0);
+		
         var node = svg.selectAll(".node")
             .data(graph.nodes)
             .enter()
@@ -114,6 +194,8 @@ font: 10px sans-serif;
             .text(function(d) {return d.name;})
             .attr("x", function() {return 8;})
             .attr("y", function() {return 3;});
+		node.on("mouseover", mouseovered)
+			.on("mouseout", mouseouted);
 
         var force = d3.layout.force()
             .size([width, height])
@@ -155,28 +237,28 @@ font: 10px sans-serif;
             width = 900 - margin.left - margin.right;
 
             if (selection == "population") {
-                data.forEach(function(d) {                       
+                graph.nodes.forEach(function(d) {                       
                     d.rank_val = d.population;
                 });    
             } else if (selection == "gdp") {
-                data.forEach(function(d) {                       
+                graph.nodes.forEach(function(d) {                       
                     d.rank_val = d.gdp;    
                 });
             } else {
-                data.forEach(function(d) {                       
+                graph.nodes.forEach(function(d) {                       
                     d.rank_val = d.life_expectancy;    
                 });
             } 
             if (position == "relative") {
-                data.sort(function(a, b) { return a.rank_val - b.rank_val;});
-                data.forEach(function(d, i) {                       
+                graph.nodes.sort(function(a, b) { return a.rank_val - b.rank_val;});
+                graph.nodes.forEach(function(d, i) {                       
                     d.rank_val = i;    
                 });
             height = 1200 - margin.top - margin.bottom;
             }
 
             var yScale = d3.scale.linear()
-                .domain([d3.min(data, function(d) { return d.rank_val; }), d3.max(data, function(d) { return d.rank_val; })])
+                .domain([d3.min(graph.nodes, function(d) { return d.rank_val; }), d3.max(graph.nodes, function(d) { return d.rank_val; })])
                 .range([height - padding, padding]);
             graph.nodes.forEach(function(d, i) {
                 d.x = width/2;
@@ -251,7 +333,7 @@ font: 10px sans-serif;
 
         function force_layout() {
             force.nodes(graph.nodes)
-                .links(graph.links)
+ //               .links(graph.links)
                 .start();
         }
 		
@@ -301,6 +383,13 @@ font: 10px sans-serif;
                 .attr("transform", function(d) { 
                     return "translate("+d.x+","+d.y+")"; 
                 });
+
+			link.transition().duration(duration)
+				.attr("x1", function(d) { return d.target.x; })
+				.attr("y1", function(d) { return d.target.y; })
+				.attr("x2", function(d) { return d.source.x; })
+				.attr("y2", function(d) { return d.source.y; });
+
         } 
 
         d3.select("#rankby")
@@ -334,16 +423,23 @@ font: 10px sans-serif;
 
         d3.selectAll("input.views")
             .on("change", function() {
-                   view_by = d3.select(this).property("value");
+                view_by = d3.select(this).property("value");
                 if (view_by == "rankings") {
-                    rank_value();    
+                    rank_value(); 
+					link.attr("opacity", 0);					
                 } else if (view_by == "scatter"){
                     scatter_value();
+					link.attr("opacity", 0);
                 } else if (view_by == "circular") {
                     circular_layout();
-                } else {
+					link.attr("opacity", 0);
+                } else if (view_by == "force") {
                     force_layout();
-                }
+					link.attr("opacity", 0);
+                } else if (view_by == "trade") {
+					circular_layout();
+					link.attr("opacity", 1);
+				}
             });
 
         d3.select("#plotby")
@@ -381,7 +477,23 @@ font: 10px sans-serif;
                     force_layout();
                 }
             });
+			
+		function mouseovered(d) {  //derived from http://bl.ocks.org/mbostock/7607999
+			if (view_by == "trade") {
+				node.each(function(n) { n.target = n.source = true; });
+				link
+					.classed("linkdim", function(k) { if (k.source != d) return true;})
+					.classed("linkshow", function(l) { if (l.source === d) return l.target.target = false; });
+				node.classed("nodedim", function(n) { return n.target; });
+			}
+		}
 
+		function mouseouted(d) {  //derived from http://bl.ocks.org/mbostock/7607999
+			if (view_by == "trade") {
+				link.classed("linkdim", false);
+				node.classed("nodedim", false);
+			}
+		}
 });
 
 
