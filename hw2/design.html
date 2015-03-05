@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Homework 2 Graph</title>
+<style>
+
+  .link {
+    stroke: gray;
+  }
+
+  .node {
+    fill: black;
+    stroke: #000;
+    stroke-width: .9px;
+  }
+  
+  .node:hover {
+    fill: black;
+    stroke: red;
+    stroke-width: 1px;
+    stroke-opacity: 1; 
+    font-weight: 700;
+  }
+  
+  .linkshow {
+    stroke-opacity: 1;
+    stroke: red;
+  }
+
+  .linkdim {
+    stroke-opacity: 0.1;
+  }
+
+  .nodedim {
+    stroke-opacity: 0.05;
+    fill-opacity: 0;
+  }
+
+  .nodeshow{
+    fill-opacity: 1;
+  }
+
+  svg {
+    font: 10px sans-serif;
+  }
+  
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+  <form>
+  
+  <label><text id="yearmin"></text><input type="range" class="timeslider" name="timeslider" step="1" defaultValue=2012><text id="yearmax"></text></label>
+  <br />
+  Size By:
+  <label><input class="sizeby" type="radio" name="sizeby" value="gdp" checked>GDP</label>
+  <label><input class="sizeby" type="radio" name="sizeby" value="population" >Population</label>
+  </form>
+<script>
+    var margin = {top: 50, bottom: 10, left: 300, right: 40};
+    var width = 1700 - margin.left - margin.right;
+    var height = 700 - margin.top - margin.bottom;
+    var padding = 15;
+    var continents = ["Americas", "Africa", "Asia", "Europe", "Oceania"]; 
+    var size_by = "gdp";
+    var fill = d3.scale.category10();
+    var cont = [{continent: "Americas"}, {continent: "Africa"}, {continent: "Asia"}, {continent: "Europe"}, {continent: "Oceania"}];
+    var year_slide = 2012;
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var fill = d3.scale.category10();
+
+        var graph = {nodes: [], links: []};
+    var clickfocus = false;
+
+    d3.json("data/countries_1995_2012.json", function(error, data){
+
+        data = data.map(function(d) {
+            var name = d.name;
+            var continent = d.continent;
+            var country_id = d.country_id;
+            var latitude = d.latitude;
+            var longitude = d.longitude;
+            return d.years.map(function(e) {
+                var gdp = e.gdp;
+                var population = e.population;
+                var year = e.year;
+                var life_expectancy = e.life_expectancy;
+                var top_partners = e.top_partners;
+                return {
+                    "name": name,
+                    "continent": continent,
+                    "country_id": country_id,
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "year": year,
+                    "population": population,
+                    "gdp": gdp,
+					"life_expectancy": life_expectancy,
+                    "top_partners": top_partners
+                }
+            });
+        });
+        data = [].concat.apply([], data);
+        d3.select("input.timeslider")
+            .attr("min", function(d) {return d3.min(data, function(e) {return e.year;})})
+            .attr("max", function(d) {return d3.max(data, function(e) {return e.year;})})
+            .attr("step", 1)
+            .attr("defaultValue", year_slide);
+
+        d3.select("#yearmin").text(function(d) {return d3.min(data, function(e) {return e.year;})});
+        d3.select("#yearmax").text(function(d) {return d3.max(data, function(e) {return e.year;})});
+
+        function select_year() {
+
+            var data_year = data.filter(function(d) {return d.year == year_slide;});
+
+            graph.nodes = data_year;
+            graph.nodes.forEach(function(d) { 
+                d.gdp = +d.gdp;
+                d.life_expectancy = d3.round(d.life_expectancy, 1); 
+                d.population = +d.population; 
+                d.year = +d.year; 
+            }); 
+            graph.links = data_year.map(function(d) {
+                var country_id = d.country_id;
+                var year = d.year;
+                return d.top_partners.map(function(e) {
+                    var country_id2 = e.country_id;
+                    var total_export = e.total_export;
+                    return {
+                        "source": country_id,
+                        "target": country_id2,
+                        "total_export": total_export,
+                        "year": year
+                    }
+                });
+            }); 
+
+            graph.links = [].concat.apply([], graph.links);
+            graph.links.forEach(function(e) { 
+                var sourceNode = graph.nodes.filter(function(n) { return n.country_id === e.source; })[0],
+                targetNode = graph.nodes.filter(function(n) { return n.country_id === e.target; })[0];
+                if (!targetNode) {
+                } else {
+                    e.source = sourceNode;
+                    e.target = targetNode; 
+                    e.total_export = +e.total_export;
+                    e.year = +e.year;
+                }                
+            }); 
+        }
+
+        select_year();
+
+        var link = svg.selectAll(".link")
+            .data(graph.links);
+        link.enter().append("line")
+            .attr("class", "link");    
+
+        var node = svg.selectAll(".node")
+            .data(graph.nodes)
+            .enter()
+            .append("g").attr("class", "node");
+        node.append("circle")
+            .style("fill", function(d) {return fill(d.continent);})
+            .style("opacity", .6);
+        node.append("text")
+            .text(function(d) {return d.name;})
+            .attr("x", function() {return 5;})
+            .attr("y", function() {return 3;});
+        node
+            .on("mouseover", mouseovered)
+            .on("mouseout", mouseouted);
+        node
+            .on("click", mouseclicked);
+
+        scatter_value();
+
+        function scatter_value() {
+         //   height = 800 - margin.top - margin.bottom;
+         //   width = 1600 - margin.left - margin.right;
+
+            graph.nodes.forEach(function(d) {                       
+                d.xval = d.longitude;
+                d.yval = d.latitude;
+            });
+            node.data(graph.nodes);
+            link.data(graph.links);
+          
+            var yScale = d3.scale.linear()
+                .domain([d3.min(graph.nodes, function(d) { return d.yval; }), d3.max(graph.nodes, function(d) { return d.yval; })])
+                .range([height - padding, padding]);
+            var xScale = d3.scale.linear()
+                .domain([d3.min(graph.nodes, function(d) { return d.xval; }), d3.max(graph.nodes, function(d) { return d.xval; })])
+                .range([padding, width - 7*padding]);
+
+            graph.nodes.forEach(function(d, i) {
+                d.x = xScale(d.xval);
+                d.y = yScale(d.yval);
+            });
+
+            var sizescale = d3.scale.sqrt().range([0.2,50]);
+            if (size_by == "gdp") {
+                sizescale.domain([d3.min(graph.nodes, function(d) {return d.gdp;}), d3.max(graph.nodes, function(d) {return d.gdp;})]);
+            } else {
+                sizescale.domain([d3.min(graph.nodes, function(d) {return d.population;}), d3.max(graph.nodes, function(d) {return d.population;})]);
+            }
+            node.selectAll("circle").attr("r", function(d) {
+                if (size_by == "gdp") {
+                    return sizescale(d.gdp);
+                } else {
+                    return sizescale(d.population);
+                }
+            });
+            var linkscale = d3.scale.sqrt().range([0.2,6]);
+            linkscale.domain([d3.min(graph.links, function(d) {return d.total_export;}), d3.max(graph.links, function(d) {return d.total_export;})]);
+            link.style("stroke-width", function(d) {return linkscale(d.total_export);});  
+
+            graph_update(500);    
+        } 
+
+
+        function graph_update(duration) {
+
+            link.transition().duration(duration)
+                .attr("x1", function(d) { return d.target.x; })
+                .attr("y1", function(d) { return d.target.y; })
+                .attr("x2", function(d) { return d.source.x; })
+                .attr("y2", function(d) { return d.source.y; });
+
+            node.transition().duration(duration)
+                .attr("transform", function(d) { return "translate("+d.x+","+d.y+")"; });
+        } 
+
+        function mouseovered(d) {  //derived from http://bl.ocks.org/mbostock/7607999
+            if (!clickfocus) {    
+                node.each(function(n) { n.target = n.source = true; });
+        
+                    link
+                    .classed("linkdim", function(k) { if (k.source != d) return true;})
+                    .classed("linkshow", function(l) { if (l.source === d) return l.target.target = false; })
+                    .classed("linkshow", function(l) { if (l.source == d) return true;});
+
+                     node
+                    .classed("nodedim", function(n) { return n.target; })
+                    .classed("nodeshow", function(n) { return n == d;}); 
+            }
+        }
+
+        function mouseouted(d) {  //derived from http://bl.ocks.org/mbostock/7607999
+            if (!clickfocus) {
+                link
+                    .classed("linkdim", false)
+                    .classed("linkshow", false);
+
+                node.classed("nodedim", false);
+            }
+        }
+
+        function mouseclicked(d) {
+            clickfocus = !clickfocus;
+            if (clickfocus) {
+                clickedon = d.country_id;
+            }
+        }
+
+
+        d3.selectAll("input.timeslider")
+            .on("change", function() {
+                year_slide = this.value;
+                year_slide = +year_slide;
+                select_year();
+                scatter_value();
+                if (clickfocus) {
+                    sel_country = graph.nodes.filter(function(n) { return n.country_id === clickedon; })[0];
+                    selupdate(sel_country);
+                }
+            });
+
+        function selupdate(d) {
+            node.each(function(n) { n.target = n.source = true; });
+        
+            link
+                .classed("linkdim", function(k) { if (k.source != d) return true;})
+                .classed("linkshow", function(l) { if (l.source === d) return l.target.target = false; })
+                .classed("linkshow", function(l) { if (l.source == d) return true;});
+
+            node
+                .classed("nodedim", function(n) { return n.target; })
+                .classed("nodeshow", function(n) { return n == d;});
+        }
+
+        d3.selectAll("input.sizeby")
+            .on("change", function() {
+                size_by = d3.select(this).property("value");
+                select_year();
+                scatter_value();
+            });
+	});
+
+</script>
+</body>
+</html>
