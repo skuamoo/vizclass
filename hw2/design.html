@@ -316,8 +316,7 @@
 		var unitsMod = function(u) {return units(u).replace(/G/, "B")}; //derived from http://stackoverflow.com/questions/17037023/how-to-get-localizable-or-customizable-si-codes-with-d3-format
 		
 		var xAxisb = d3.svg.axis().scale(xScaleb).orient("bottom").tickSize(-barheight)
-//		.tickFormat(d3.format("s"));
-		.tickFormat(function(u) {return unitsMod(u);})
+			.tickFormat(function(u) {return unitsMod(u);});
 		var yAxisb = d3.svg.axis().scale(yScaleb).orient("left").tickSize(0);
 
         var max = d3.max(barlinks, function(d) {return d.total_export;});
@@ -362,7 +361,6 @@
 		
 	
 		}
-//svg.append("g").attr("class", "bar").append("rect").attr("width", 20).attr("height", 10).attr("x", 340).attr("y", 370).style("fill", "steelblue");
 	});
 
 </script>
