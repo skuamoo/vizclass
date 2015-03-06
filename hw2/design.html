@@ -43,6 +43,10 @@
     font: 10px sans-serif;
   }
   
+ .axis path {
+	fill: none;
+  }
+  
 </style>
 <body>
 <script src="http://d3js.org/d3.v3.min.js"></script>
@@ -54,6 +58,7 @@
   <label><input class="sizeby" type="radio" name="sizeby" value="gdp" checked>GDP</label>
   <label><input class="sizeby" type="radio" name="sizeby" value="population" >Population</label>
   </form>
+  Mouse over any country to view top trade partners. Click a country to drill down, and click again to go back to world view.
 <script>
     var margin = {top: 50, bottom: 10, left: 300, right: 40};
     var width = 1700 - margin.left - margin.right;
@@ -107,7 +112,7 @@
             .attr("min", function(d) {return d3.min(data, function(e) {return e.year;})})
             .attr("max", function(d) {return d3.max(data, function(e) {return e.year;})})
             .attr("step", 1)
-            .attr("defaultValue", year_slide);
+            .attr("value", year_slide);
 
         d3.select("#yearmin").text(function(d) {return d3.min(data, function(e) {return e.year;})});
         d3.select("#yearmax").text(function(d) {return d3.max(data, function(e) {return e.year;})});
@@ -263,9 +268,11 @@
             clickfocus = !clickfocus;
             if (clickfocus) {
                 clickedon = d.country_id;
-            }
+				draw_barchart(d.name);
+            } else {
+				svg.selectAll("g.bar").remove();
+			}
         }
-
 
         d3.selectAll("input.timeslider")
             .on("change", function() {
@@ -298,6 +305,64 @@
                 select_year();
                 scatter_value();
             });
+		
+		function draw_barchart(country) {
+		var barheight = 100;
+		var barwidth = 170;
+		var barlinks = graph.links.filter(function(n) { return n.source.name === country; });
+		var xScaleb = d3.scale.linear().range([0, barwidth]);
+		var yScaleb = d3.scale.ordinal().rangeRoundBands([365, barheight+365], .2, 0); 
+		var units = d3.format("s");
+		var unitsMod = function(u) {return units(u).replace(/G/, "B")}; //derived from http://stackoverflow.com/questions/17037023/how-to-get-localizable-or-customizable-si-codes-with-d3-format
+		
+		var xAxisb = d3.svg.axis().scale(xScaleb).orient("bottom").tickSize(-barheight)
+//		.tickFormat(d3.format("s"));
+		.tickFormat(function(u) {return unitsMod(u);})
+		var yAxisb = d3.svg.axis().scale(yScaleb).orient("left").tickSize(0);
+
+        var max = d3.max(barlinks, function(d) {return d.total_export;});
+        var min = 0;
+
+        xScaleb.domain([min, max]);
+        yScaleb.domain(barlinks.map(function(d) { return d.target.name; }));
+		
+		var g = svg.append("g").attr("class", "bar");
+		g.append("text").text(country + " Top Trade Partners (Total Exports)").attr("x", 330).attr("y", 360).style("font-weight", "bold");
+		
+        var groups = g.append("g")
+            .selectAll("text")
+			.data(barlinks)
+            .enter()
+            .append("g");
+ 
+        var bars = groups
+            .append("rect")
+            .attr("width", function(d) { return xScaleb(d.total_export); })
+            .attr("height", yScaleb.rangeBand())
+            .attr("x", xScaleb(min) + 330)
+            .attr("y", function(d) { return yScaleb(d.target.name); })
+			.style("fill", function(d) {return fill(d.target.continent);});		
+
+		
+	
+		g.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(330, 460)")
+			.call(xAxisb)
+			.selectAll("text")  
+				.style("text-anchor", "end")
+				.attr("dx", "-.8em")
+				.attr("dy", ".15em")
+				.attr("transform", function(d) {return "rotate(-90)" });;
+						
+		g.append("g")
+			.attr("class", "y axis")
+			.attr("transform", "translate(330, 0)")
+			.call(yAxisb);		
+		
+	
+		}
+//svg.append("g").attr("class", "bar").append("rect").attr("width", 20).attr("height", 10).attr("x", 340).attr("y", 370).style("fill", "steelblue");
 	});
 
 </script>
