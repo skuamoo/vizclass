@@ -4,7 +4,7 @@ Design
 I thought there was a lot of value in showing the data by geographic position since location is significant to trade, so the design I chose mapped countries in a scatterplot by latitude and longitude. 
 
 <p align="center">
-  <img src="design/SKuamoo1.jpg" height="300"/>
+  <img src="design/SKuamoo1.jpg" height="400" />
 </p>
 
 I used several different channels to encode data:
@@ -16,7 +16,7 @@ I used several different channels to encode data:
 * Color: Continent (for visual grouping)
 
 <p align="center">
-  <img src="design/map.JPG" height="300"/>
+  <img src="design/map.JPG" height="400"/>
 </p>
 
 I also included a time slider to enable the user to view changes in trade patterns over time. 
@@ -24,13 +24,13 @@ I also included a time slider to enable the user to view changes in trade patter
 The user can toggle between encoding the bubble size with GDP or Population
 
 <p align="center">
-  <img src="design/map_population.JPG" height="300"/>
+  <img src="design/map_population.JPG" height="400"/>
 </p>
 
 Since the whole map view is kind of cluttered with so many links I designed a mouseover function that dims all nodes and links that are not associated with the top 10 trade partners of the country the user is mousing over.
 
 <p align="center">
-  <img src="design/mouseover.jpg" height="300"/>
+  <img src="design/mouseover.jpg" height="400"/>
 </p>
 
 I realized during implementation that it would be useful to be able to view a particular country's trade network over different years but there was no way to change the time slider while mousing over a country so I created a function that enables the user to click on a country to persist the view. The user is then able to change the year while still viewing only one country's partners, and can then go back to the world view by clicking the country a second time.
@@ -38,7 +38,7 @@ I realized during implementation that it would be useful to be able to view a pa
 I also decided to incorporate one of my alternate designs, a bar chart showing total export values for the country's top 10 trade partners in order to provide more detail on these values and show rankings since it link width was only effective in conveying a very general overview of total export.
 
 <p align="center">
-  <img src="design/click.JPG" height="300"/>
+  <img src="design/click.JPG" height="400"/>
 </p>
 
 Alternate Designs
