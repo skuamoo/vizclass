@@ -268,9 +268,12 @@
             clickfocus = !clickfocus;
             if (clickfocus) {
                 clickedon = d.country_id;
+				draw_shadow(d.x, d.y);
 				draw_barchart(d.name);
+
             } else {
 				svg.selectAll("g.bar").remove();
+				svg.selectAll("path.shadow").remove();
 			}
         }
 
@@ -360,6 +363,26 @@
 			.call(yAxisb);		
 		
 	
+		}
+		
+		function draw_shadow(x, y) {
+		var shadow_left = "M " + x + " " + y + " L 330 365 L 330 470 L " + x + " " + y;
+		var shadow_right = "M " + x + " " + y + " L 522 365 L 522 470 L " + x + " " + y;
+		var shadow_top = "M " + x + " " + y + " L 330 350 L 522 350 L " + x + " " + y;
+
+		svg.append("path")
+			.attr("class", "shadow")
+			.attr("d", function(m) { 
+				if (y < 250 || ((y < 370) && (x > 330) && (x < 522))) {
+					return shadow_top;
+				} else if (x < 425) {
+					return shadow_left;
+				} else {
+					return shadow_right;
+				}
+			})
+			.style("fill", "lightgray")
+			.style("opacity", .5);
 		}
 	});
 
