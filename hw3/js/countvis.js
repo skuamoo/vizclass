@@ -28,9 +28,9 @@ CountVis = function(_parentElement, _data, _metaData, _eventHandler){
 
 
     // TODO: define all "constants" here
-
-
-
+    this.margin = {top:20, right:20, bottom:30, left:80};
+    this.width = 650 - this.margin.left - this.margin.right;
+    this.height = 330 - this.margin.top - this.margin.bottom;
 
     this.initVis();
 }
@@ -43,22 +43,70 @@ CountVis.prototype.initVis = function(){
 
     var that = this; // read about the this
 
-
-
     //TODO: implement here all things that don't change
+    this.xScale = d3.time.scale()
+        .range([0, this.width]);
     //TODO: implement here all things that need an initial status
     // Examples are:
     // - construct SVG layout
+
+    this.xScale.domain(d3.extent(that.data, function(d) { return d.time; }));
+
+    this.svg = d3.select("#countVis").append("svg")
+            .attr("width", this.width + this.margin.left + this.margin.right)
+            .attr("height", this.height + this.margin.top + this.margin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
     // - create axis
+    this.yScale = d3.scale.pow()
+        .exponent(1)
+        .range([this.height, 0]); 
+    
+    this.xAxis = d3.svg.axis()
+        .scale(this.xScale)
+        .orient("bottom");
+
+    this.yAxis = d3.svg.axis()
+        .scale(this.yScale)
+        .orient("left");   
     // -  implement brushing !!
+    this.brush = d3.svg.brush()
+        .x(this.xScale)
+        .on("brush", function(){
+            console.log(that.brush.extent());
+            console.log(that.brush.empty());
+        });
+
+    this.area = d3.svg.area()
+        .x(function(d) {return that.xScale(d.time)})
+        .y0(this.height)
+        .y1(function(d) {return that.yScale(d.count)});
+  
+    this.path = this.svg.append("path")
+        .datum(this.data)
+        .attr("class", "area")
+        .attr("d", this.area); 
+
+    this.svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + this.height + ")")
+        .call(this.xAxis);
+
+    this.svg.append("g")
+        .attr("class", "y axis")
+        .attr("id", "yaxis");
+
+    this.svg.append("g")
+            .attr("class", "brush")
+        .call(this.brush)
+        .selectAll("rect")
+            .attr("height", this.height);
+
     // --- ONLY FOR BONUS ---  implement zooming
 
-    // TODO: modify this to append an svg element, not modify the current placeholder SVG element
-    this.svg = this.parentElement.select("svg");
-
     //TODO: implement the slider -- see example at http://bl.ocks.org/mbostock/6452972
-    this.addSlider(this.svg)
-
+    //this.addSlider(this.svg)
+    this.addSlider();
 
     // filter, aggregate, modify data
     this.wrangleData();
@@ -77,7 +125,6 @@ CountVis.prototype.wrangleData= function(){
     // displayData should hold the data which is visualized
     // pretty simple in this case -- no modifications needed
     this.displayData = this.data;
-
 }
 
 
@@ -87,10 +134,17 @@ CountVis.prototype.wrangleData= function(){
  * @param _options -- only needed if different kinds of updates are needed
  */
 CountVis.prototype.updateVis = function(){
-
+    var that = this;
     // TODO: implement update graphs (D3: update, enter, exit)
+    this.yScale
+        .domain([0, d3.max(that.data, function(d) { return d.count; })]);
 
+    // updates axis
+    this.svg.select("path.area")
+        .attr("d", this.area);
 
+    this.svg.select(".y.axis")
+        .call(this.yAxis);
 }
 
 /**
@@ -100,11 +154,6 @@ CountVis.prototype.updateVis = function(){
  * @param selection
  */
 CountVis.prototype.onSelectionChange= function (selectionStart, selectionEnd){
-
-    // TODO: call wrangle function
-
-    // do nothing -- no update when brushing
-
 
 }
 
@@ -129,7 +178,7 @@ CountVis.prototype.addSlider = function(svg){
     var that = this;
 
     // TODO: Think of what is domain and what is range for the y axis slider !!
-    var sliderScale = d3.scale.linear().domain([0,200]).range([0,200])
+    var sliderScale = d3.scale.linear().domain([1,200]).range([0,200])
 
     var sliderDragged = function(){
         var value = Math.max(0, Math.min(200,d3.event.y));
@@ -137,8 +186,9 @@ CountVis.prototype.addSlider = function(svg){
         var sliderValue = sliderScale.invert(value);
 
         // TODO: do something here to deform the y scale
-        console.log("Y Axis Slider value: ", sliderValue);
+        //console.log("Y Axis Slider value: ", sliderValue);
 
+        that.yScale.exponent(sliderValue/200);
 
         d3.select(this)
             .attr("y", function () {
@@ -150,9 +200,9 @@ CountVis.prototype.addSlider = function(svg){
     var sliderDragBehaviour = d3.behavior.drag()
         .on("drag", sliderDragged)
 
-    var sliderGroup = svg.append("g").attr({
+    var sliderGroup = this.svg.append("g").attr({
         class:"sliderGroup",
-        "transform":"translate("+0+","+30+")"
+        "transform":"translate("+-70+","+30+")"
     })
 
     sliderGroup.append("rect").attr({
@@ -166,7 +216,7 @@ CountVis.prototype.addSlider = function(svg){
 
     sliderGroup.append("rect").attr({
         "class":"sliderHandle",
-        y:0,
+        y:200,
         width:20,
         height:10,
         rx:2,
