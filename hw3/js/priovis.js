@@ -29,10 +29,8 @@ PrioVis.prototype.initVis = function(){
 
     var that = this; // read about the this
 
-
     //TODO: construct or select SVG
     //TODO: create axis and scales
-//    this.xScale = d3.scale.ordinal().domain(d3.range(that.displayData.length)).rangeRoundBands([0, that.width], 0.05)
     this.xScale = d3.scale.ordinal().rangeRoundBands([0, that.width], .05);
     this.yScale = d3.scale.linear().range([that.height, 0]);
 
@@ -45,9 +43,6 @@ PrioVis.prototype.initVis = function(){
     this.xAxis = d3.svg.axis()
     	.scale(this.xScale)
     	.orient("bottom");
- //   	.selectAll("text")
- //   		.style("text-anchor", "end")
- //   		.attr("transform", "rotate(-45)");
 
     this.yAxis = d3.svg.axis()
         .scale(this.yScale)
@@ -76,7 +71,6 @@ PrioVis.prototype.wrangleData= function(_filterFunction){
 
     // displayData should hold the data which is visualized
     this.displayData = this.filterAndAggregate(_filterFunction);
-//    this.displayData = this.data;
     //// you might be able to pass some options,
     //// if you don't pass options -- set the default options
     //// the default is: var options = {filter: function(){return true;} }
@@ -91,7 +85,6 @@ PrioVis.prototype.wrangleData= function(_filterFunction){
  */
 PrioVis.prototype.updateVis = function(){
     var that = this;
-    console.log(this.displayData);
     // Dear JS hipster,
     // you might be able to pass some options as parameter _option
     // But it's not needed to solve the task.
@@ -101,7 +94,6 @@ PrioVis.prototype.updateVis = function(){
     // TODO: ...update scales
     // TODO: ...update graphs
     this.xScale.domain(d3.range(that.displayData.length));
- //   this.xScale.domain(this.displayData.map(function(d, i) { return i; }));
     this.yScale.domain([0, d3.max(that.displayData)]);
 
     this.xAxis.tickFormat(function(d, i) { return that.metaData.priorities[i]["item-title"];});
@@ -116,33 +108,27 @@ PrioVis.prototype.updateVis = function(){
 
     this.svg.select(".y.axis")
         .call(this.yAxis);
-/*
-    this.bar
-    	.data(this.displayData)
-		.attr("y", function(d) { return that.yScale(d);})
-		.attr("height", function(d) { return that.height - that.yScale(d);});
-		*/	
 
     var bar = this.svg.selectAll(".bar")
-    	.data(that.displayData)
-    	.enter()
-    	.append("rect")
-//    		.attr("class", "bar")
- 			.attr("x", function(d, i) { return that.xScale(i);})
-//			.attr("x", function(d, i) { return that.xScale(that.metaData.priorities[i]["item-title"]);})
-			.attr("y", function(d) { return that.yScale(d);})
-			.attr("width", that.xScale.rangeBand())
-			.attr("height", function(d) { return that.height - that.yScale(d);})
-			.attr("fill", function(d, i) { return that.metaData.priorities[i]["item-color"];});	
+        .data(this.displayData, function(d) { return d; });
 
-/*
-	bar.exit().remove();
+    var bar_enter = bar.enter().append("g");
 
-	bar
-		.attr("y", function(d) { return that.yScale(d);})
-		.attr("height", function(d) { return that.height - that.yScale(d);});		
-*/
-	
+    bar_enter.append("rect");
+
+    bar
+        .attr("class", "bar")
+      .style("fill", function(d, i) { return that.metaData.priorities[i]["item-color"];})
+        .attr("transform", function(d, i) {return "translate(" + that.xScale(i) + " , " + that.yScale(d) + ")"; });
+
+    bar.exit()
+        .remove();
+
+    bar.selectAll("rect") 
+      .attr("x", 0) 
+      .attr("y", 0) 
+      .attr("height", function(d) { return that.height - that.yScale(d);})
+      .attr("width", this.xScale.rangeBand());
 
 }
 
