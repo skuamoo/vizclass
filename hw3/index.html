@@ -73,10 +73,10 @@
 
         <div class="row">
             <div class="col-md-12" id="prioVis">
-                <!-- TODO: delete placeholder svg element -->
+                <!-- TODO: delete placeholder svg element 
                 <svg width="650" height="440" style="background-color: lightgreen">
                     <text x="50" y="50">HERE should be PrioVis</text>
-                </svg>
+                </svg> -->
             </div>
 
         </div>
@@ -116,15 +116,16 @@
                 var MyEventHandler = new Object();
 
                 //TODO: Instantiate all Vis Objects here
-                var count_vis = new CountVis(d3.select("#countVis"), allData, MyEventHandler)
-                var age_vis = new AgeVis(d3.select("#ageVis"), allData, MyEventHandler)
- //               var prio_vis = new PrioVis(d3.select("#prioVis"), allData, MyEventHandler)
+                var count_vis = new CountVis(d3.select("#countVis"), allData, metaData, MyEventHandler);
+                var age_vis = new AgeVis(d3.select("#ageVis"), allData, metaData);
+                var prio_vis = new PrioVis(d3.select("#prioVis"), allData, metaData);
                 // TODO: bind the eventHandler to the Vis Objects
                 // events will be created from the CountVis object (nothing to do here)
                 // events will be consumed by the PrioVis and AgeVis object (binding should happen here)
-                $(MyEventHandler).bind("selectionChanged", function(event, min, max){
-                    age_vis.onSelectionChange(min, max);
-                    prio_vis.onSelectionChange(min, max);
+                $(MyEventHandler).bind("selectionChanged", function(event, brushStart, brushStop){
+                    age_vis.onSelectionChange(brushStart, brushStop);
+                    prio_vis.onSelectionChange(brushStart, brushStop);
+                    d3.select("#brushInfo").text(brushStart + " - " + brushStop);
                 });       
 
             }
@@ -177,23 +178,8 @@
                         return res;
                     });
 
-                    var aggregateCountsForRange = function(from, to){
-                        var count = 0;
-                        var ageCount = d3.range(0,99). map(function(){return 0;});
-                        var priosCount = [];
-
-                        allData.forEach(function(d) {
-                            if (d.time >= from && d.time <= to) {
-                                count += d.count;
-                                for(var i=0; i< d.ages.length; i++){
-                                    ageCount[i] += d.ages[i];
-                                 }
-                            }
-                        });
-                        return {count: count, ageCount: ageCount, priosCount: priosCount};
-                    }
-
                     metaData = _metaData;
+
                     initVis();
                 }
             }

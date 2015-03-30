@@ -26,7 +26,6 @@ CountVis = function(_parentElement, _data, _metaData, _eventHandler){
     this.eventHandler = _eventHandler;
     this.displayData = [];
 
-
     // TODO: define all "constants" here
     this.margin = {top:20, right:20, bottom:30, left:80};
     this.width = 650 - this.margin.left - this.margin.right;
@@ -52,7 +51,7 @@ CountVis.prototype.initVis = function(){
 
     this.xScale.domain(d3.extent(that.data, function(d) { return d.time; }));
 
-    this.svg = d3.select("#countVis").append("svg")
+    this.svg = this.parentElement.append("svg")
             .attr("width", this.width + this.margin.left + this.margin.right)
             .attr("height", this.height + this.margin.top + this.margin.bottom)
         .append("g")
@@ -73,8 +72,9 @@ CountVis.prototype.initVis = function(){
     this.brush = d3.svg.brush()
         .x(this.xScale)
         .on("brush", function(){
-            console.log(that.brush.extent());
-            console.log(that.brush.empty());
+ //           console.log(that.brush.extent());
+ //           console.log(that.brush.empty());
+            $(that.eventHandler).trigger("selectionChanged", that.brush.extent());
         });
 
     this.area = d3.svg.area()
