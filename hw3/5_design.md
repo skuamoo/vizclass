@@ -40,10 +40,10 @@ Design 3:
 
 First, while the shape of the line remained relatively consistent across the year (indicating that the relative proportions of votes across the categories remained similar), when I placed the selection over the spike in March 2014 the proportions changed dramatically with Better Healthcare making up a much higher proportion that normal. This is likely due to the fact that the deadline for signing up for the first round of the Affordable Healthcare Act was at the end of March 2014. There was also a small spike in the better transport and roads category which makes sense as most potholes show up in roads in March after the temperatures rise from the winter.
 <p align="center">
-  <img src="designStudio/healthcare.jpg" height="500" />
+  <img src="designStudio/healthcare.JPG" height="500" />
 </p>
 
 Next, in September the number of votes for Better Education far exceeded the baseline in comparison to the other categories. Looking at agevis the voting population was also on the younger side. Both of these things make sense since schools typically start around September, and the 18-22 college age group is likely to be thinking about education.
 <p align="center">
-  <img src="designStudio/schools.jpg" height="500" />
+  <img src="designStudio/schools.JPG" height="500" />
 </p>
