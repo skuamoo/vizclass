@@ -185,9 +185,6 @@ PrioVis.prototype.filterAndAggregate = function(_filter){
             for(var j=0; j< d.prios.length; j++){
                 res[j] += d.prios[j];
             }
-//            res.val = res[i];
-//            res.pos = i;
- //           res.col = that.metaData.priorities[res.val]["item-color"];
         });   
     // accumulate all values that fulfill the filter criterion
 
